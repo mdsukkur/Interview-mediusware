@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use App\Models\ProductVariant;
-use App\Models\ProductVariantPrice;
 use App\Models\Variant;
 use Illuminate\Http\Request;
 
@@ -17,7 +15,32 @@ class ProductController extends Controller
      */
     public function index()
     {
-        return view('products.index');
+        $products = Product::with('productVariantPrices', 'productVariantPrices.ProductVariantOne', 'productVariantPrices.ProductVariantTwo', 'productVariantPrices.ProductVariantThree')
+            ->when(request('title'), function ($q) {
+                $q->where('title', 'like', "%" . request('title') . "%");
+            })
+            ->when(request('date'), function ($q) {
+                $q->whereDate('created_at', request('date'));
+            })
+            ->when(request('variant'), function ($q) {
+                $q->whereHas('productVariant', function ($query) {
+                    $query->where('variant', request('variant'));
+                });
+            })
+            ->when(request('price_from') || request('price_to'), function ($q) {
+                $q->whereHas('productVariantPrices', function ($query) {
+                    if (request('price_from') && request('price_to'))
+                        $query->whereBetween('price', [request('price_from'), request('price_to')]);
+                    elseif (request('price_from'))
+                        $query->where('price', '>=', request('price_from'));
+                    elseif (request('price_to'))
+                        $query->where('price', '>=', request('price_to'));
+                });
+            })
+            ->paginate(5);
+
+        $variants = Variant::select('title', 'id')->with('variant_items:variant_id,variant')->get();
+        return view('products.index', compact('products', 'variants'));
     }
 
     /**
