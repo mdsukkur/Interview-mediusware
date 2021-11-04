@@ -8,6 +8,15 @@ require('./bootstrap');
 require('./sb-admin');
 window.Vue = require('vue');
 
+
+// register the plugin on vue
+import Toasted from 'vue-toasted';
+// you can also pass options, check options reference below
+Vue.use(Toasted, {
+    duration: 4000,
+    closeOnSwipe: true
+})
+
 /**
  * The following block of code may be used to automatically register your
  * Vue components. It will recursively scan this directory for the Vue
@@ -20,6 +29,7 @@ window.Vue = require('vue');
 // files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default))
 
 Vue.component('create-product', require('./components/CreateProduct.vue').default);
+Vue.component('update-product', require('./components/UpdateProduct.vue').default);
 
 /**
  * Next, we will create a fresh Vue application instance and attach it to
