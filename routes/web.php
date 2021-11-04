@@ -26,4 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('product', 'ProductController');
     Route::resource('blog', 'BlogController');
     Route::resource('blog-category', 'BlogCategoryController');
+
+    ######################## Temporary File Upload Route ########################
+    Route::post('temp-file-upload', 'UploadController@store')->name('temporary-file-upload');
 });

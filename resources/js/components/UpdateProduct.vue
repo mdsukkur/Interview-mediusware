@@ -115,6 +115,17 @@ export default {
             type: Array,
             required: true
         },
+        product: {
+            required: true
+        },
+        product_variants: {
+            type: Array,
+            required: true
+        },
+        product_variant_price_options: {
+            type: Array,
+            required: true
+        },
     },
     data() {
         return {
@@ -123,10 +134,10 @@ export default {
             description: '',
             images: [],
             product_variant: [
-                {
+                /*{
                     option: this.variants[0].id,
                     tags: []
-                }
+                }*/
             ],
             product_variant_prices: [],
             dropzoneOptions: {
@@ -217,7 +228,12 @@ export default {
         }
     },
     mounted() {
-        console.log('Component mounted.')
+        this.product_name = this.product.title;
+        this.product_sku = this.product.sku;
+        this.description = this.product.description;
+        this.product_variant = this.product_variants;
+        this.product_variant_prices = this.product_variant_price_options;
+        console.log('Update component mounted.')
     }
 }
 </script>
