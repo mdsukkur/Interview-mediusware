@@ -2286,6 +2286,10 @@ __webpack_require__.r(__webpack_exports__);
     product_variant_price_options: {
       type: Array,
       required: true
+    },
+    product_images: {
+      type: Array,
+      required: true
     }
   },
   data: function data() {
@@ -2294,12 +2298,7 @@ __webpack_require__.r(__webpack_exports__);
       product_sku: '',
       description: '',
       images: [],
-      product_variant: [
-        /*{
-            option: this.variants[0].id,
-            tags: []
-        }*/
-      ],
+      product_variant: [],
       product_variant_prices: [],
       dropzoneOptions: {
         url: '/temp-file-upload',
@@ -2369,14 +2368,13 @@ __webpack_require__.r(__webpack_exports__);
 
       var product = {
         title: this.product_name,
-        sku: this.product_sku,
         description: this.description,
         product_image: this.images,
         product_variant: this.product_variant,
         product_variant_prices: this.product_variant_prices
       };
       console.log(product);
-      axios.post('/product', product).then(function (response) {
+      axios.patch("/product/".concat(this.product.id), product).then(function (response) {
         window.location.href = "/product";
 
         _this2.$toasted.error(response.data.message);
@@ -2400,12 +2398,27 @@ __webpack_require__.r(__webpack_exports__);
     }
   },
   mounted: function mounted() {
+    var _this3 = this;
+
     this.product_name = this.product.title;
     this.product_sku = this.product.sku;
     this.description = this.product.description;
     this.product_variant = this.product_variants;
     this.product_variant_prices = this.product_variant_price_options;
     console.log('Update component mounted.');
+
+    if (this.product_images.length > 0) {
+      this.product_images.map(function (image) {
+        var file = {
+          size: 100000,
+          name: "".concat(image.file_path.split("/").pop()),
+          type: "image/".concat(image.file_path.split(".").pop())
+        };
+        var url = "".concat(window.location.origin, "/").concat(image.file_path);
+
+        _this3.$refs.myVueDropzone.manuallyAddFile(file, url);
+      });
+    }
   }
 });
 
@@ -50804,7 +50817,7 @@ var render = function() {
                   }
                 ],
                 staticClass: "form-control",
-                attrs: { type: "text", placeholder: "Product Name" },
+                attrs: { type: "text", placeholder: "Product Sku" },
                 domProps: { value: _vm.product_sku },
                 on: {
                   input: function($event) {
@@ -51195,7 +51208,11 @@ var render = function() {
                   }
                 ],
                 staticClass: "form-control",
-                attrs: { type: "text", placeholder: "Product Name" },
+                attrs: {
+                  type: "text",
+                  readonly: "",
+                  placeholder: "Product Sku"
+                },
                 domProps: { value: _vm.product_sku },
                 on: {
                   input: function($event) {

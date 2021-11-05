@@ -8,6 +8,7 @@
         <update-product
             :variants="{{ $variants }}"
             :product="{{ $product }}"
+            :product_images="{{ $product_images }}"
             :product_variant_price_options="{{ $product_variant_prices }}"
             :product_variants="{{ $product_variant }}">Loading
         </update-product>

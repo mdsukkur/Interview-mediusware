@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\ProductVariantPrice;
 use App\Models\Variant;
@@ -99,6 +100,7 @@ class ProductController extends Controller
                 ];
                 Storage::deleteDirectory("products/tmp/" . $image['folder']);
             }
+            ProductImage::insert($product_images);
 
             /*+++++++++++++++++++++++ Product Variant Insert Into DB +++++++++++++++++++++++*/
             $product_variants = [];
@@ -182,7 +184,9 @@ class ProductController extends Controller
         }
         $product_variant_prices = collect($product_variant_prices);
 
-        return view('products.edit', compact('variants', 'product', 'product_variant', 'product_variant_prices'));
+        $product_images = ProductImage::where('product_id', $product->id)->get(['file_path']);
+
+        return view('products.edit', compact('variants', 'product', 'product_variant', 'product_variant_prices','product_images'));
     }
 
     /**
@@ -194,7 +198,83 @@ class ProductController extends Controller
      */
     public function update(Request $request, Product $product)
     {
-        //
+        $request->validate([
+            'title' => 'required|string',
+            'description' => 'required|string',
+//            'product_image' => 'sometimes|array|min:1',
+//            'product_image.*.file' => 'sometimes|string|min:1',
+            'product_variant' => 'required|array|min:1',
+            'product_variant.*.tags' => 'required|array|min:1',
+            'product_variant_prices' => 'required|array|min:1',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $product->update([
+                'title' => $request->title,
+                'description' => $request->description,
+            ]);
+
+            /*+++++++++++++++++++++++ Product Image Insert Into DB +++++++++++++++++++++++*/
+            if (count($request->product_image) > 0){
+                $product_images = [];
+                foreach ($request->product_image as $image) {
+                    Storage::move("products/tmp/" . $image['folder'] . "/" . $image['file'], "products/$product->id/" . $image['file']);
+                    $product_images[] = [
+                        'product_id' => $product->id,
+                        'file_path' => "storage/products/$product->id/" . $image['file'],
+                        'created_at' => Carbon::now(),
+                        'updated_at' => Carbon::now()
+                    ];
+                    Storage::deleteDirectory("products/tmp/" . $image['folder']);
+                }
+                ProductImage::insert($product_images);
+            }
+
+            /*+++++++++++++++++++++++ Product Variant Insert Into DB +++++++++++++++++++++++*/
+            if (count($request->product_variant) > 0){
+                ProductVariant::where('product_id', $product->id)->delete();
+                $product_variants = [];
+                foreach ($request->product_variant as $variant) {
+                    foreach ($variant['tags'] as $tag) {
+                        $prodVariant = ProductVariant::create([
+                            'variant' => $tag,
+                            'variant_id' => $variant['option'],
+                            'product_id' => $product->id
+                        ]);
+
+                        $product_variants[] = ['product_variant' => $prodVariant->id, 'variant' => $prodVariant->variant];
+                    }
+                }
+            }
+
+            /*+++++++++++++++++++++++ Product Variant Price Insert Into DB +++++++++++++++++++++++*/
+            if (count($request->product_variant_prices) > 0) {
+                ProductVariantPrice::where('product_id', $product->id)->delete();
+                $product_variant_prices = [];
+                foreach ($request->product_variant_prices as $price) {
+                    $variants = explode('/', $price['title']);
+
+                    $product_variant_prices[] = [
+                        'product_variant_one' => collect($product_variants)->where('variant', $variants[0])->first()['product_variant'],
+                        'product_variant_two' => isset($variants[1]) && !empty($variants[1]) ? collect($product_variants)->where('variant', $variants[1])->first()['product_variant'] : null,
+                        'product_variant_three' => isset($variants[2]) && !empty($variants[2]) ? collect($product_variants)->where('variant', $variants[2])->first()['product_variant'] : null,
+                        'price' => $price['price'],
+                        'stock' => $price['stock'],
+                        'product_id' => $product->id,
+                        'created_at' => Carbon::now(),
+                        'updated_at' => Carbon::now()
+                    ];
+                }
+                ProductVariantPrice::insert($product_variant_prices);
+            }
+
+            DB::commit();
+            return response()->json(['message' => 'Successfully updated.'], 200);
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json(['error' => true, 'message' => $e->getMessage()], 500);
+        }
     }
 
     /**

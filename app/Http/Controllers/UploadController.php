@@ -11,7 +11,7 @@ class UploadController extends Controller
     {
         if ($request->hasFile('file')) {
             $file = $request->file('file');
-            $filename = $file->getClientOriginalName();
+            $filename = uniqid() . "." . strtolower($file->getClientOriginalExtension());
             $folder = uniqid() . '-' . now()->timestamp;
             $file->storeAs('products/tmp/' . $folder, $filename);
 
