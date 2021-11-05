@@ -10,7 +10,7 @@
                         </div>
                         <div class="form-group">
                             <label for="">Product SKU</label>
-                            <input type="text" v-model="product_sku" placeholder="Product Name" class="form-control">
+                            <input type="text" v-model="product_sku" readonly placeholder="Product Sku" class="form-control">
                         </div>
                         <div class="form-group">
                             <label for="">Description</label>
@@ -126,6 +126,10 @@ export default {
             type: Array,
             required: true
         },
+        product_images: {
+            type: Array,
+            required: true
+        },
     },
     data() {
         return {
@@ -133,12 +137,7 @@ export default {
             product_sku: '',
             description: '',
             images: [],
-            product_variant: [
-                /*{
-                    option: this.variants[0].id,
-                    tags: []
-                }*/
-            ],
+            product_variant: [],
             product_variant_prices: [],
             dropzoneOptions: {
                 url: '/temp-file-upload',
@@ -147,7 +146,7 @@ export default {
                 },
                 thumbnailWidth: 150,
                 maxFilesize: 0.5,
-                parallelUploads: 1
+                parallelUploads: 1,
             }
         }
     },
@@ -199,7 +198,6 @@ export default {
         saveProduct() {
             let product = {
                 title: this.product_name,
-                sku: this.product_sku,
                 description: this.description,
                 product_image: this.images,
                 product_variant: this.product_variant,
@@ -207,7 +205,7 @@ export default {
             }
             console.log(product);
 
-            axios.post('/product', product).then(response => {
+            axios.patch(`/product/${this.product.id}`, product).then(response => {
                 window.location.href = "/product";
                 this.$toasted.error(response.data.message);
             }).catch(error => {
@@ -234,6 +232,18 @@ export default {
         this.product_variant = this.product_variants;
         this.product_variant_prices = this.product_variant_price_options;
         console.log('Update component mounted.')
+
+        if (this.product_images.length > 0) {
+            this.product_images.map((image) => {
+                var file = {
+                    size: 100000,
+                    name: `${image.file_path.split("/").pop()}`,
+                    type: `image/${image.file_path.split(".").pop()}`
+                };
+                var url = `${window.location.origin}/${image.file_path}`;
+                this.$refs.myVueDropzone.manuallyAddFile(file, url);
+            });
+        }
     }
 }
 </script>
